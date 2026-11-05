@@ -1,18 +1,17 @@
 # 提交说明
 
-## 当前交付与未完成事项
+## 交付内容与提交目标
 
-本地项目包含源码、自动测试、示例、架构文档、真实分步 Git 历史及最终 `final` 标签。尚未推送远程：用户表示尚未创建仓库，当前也没有提供截止时间。因此不能声称远程提交已完成或已满足截止时间。
+项目包含源码、自动测试、示例、架构文档、真实分步 Git 历史及最终 `final` 标签。提交仓库为 [pdker1/high-software-lab1](https://github.com/pdker1/high-software-lab1)，用户已将其设为公开。用下方远端校验命令核对 main 和 final；课程截止时间尚未提供，不能据此判断是否按时提交。
 
 ## 上传 GitHub
 
-1. 登录自己的 GitHub，新建空仓库，例如 `svg-editor-phase1`。是否公开按课程要求选择；不要勾选自动创建 README、License 或 .gitignore，以避免已有历史冲突。
-2. 在本地工程目录执行以下命令，将 `YOUR_NAME` 和仓库名替换为自己的值：
+1. 目标仓库已经创建，原始本地工程的 origin 已指向该地址。
+2. 如果从 bundle 恢复到新目录，先添加远程；已有 origin 时跳过第一条命令：
 
 ```sh
-git remote add origin https://github.com/YOUR_NAME/svg-editor-phase1.git
-git push -u origin main
-git push origin final
+git remote add origin https://github.com/pdker1/high-software-lab1.git
+git push --atomic -u origin main refs/tags/final
 ```
 
 3. 若提示登录，通过本机 Git 凭据管理器或浏览器完成授权，不把密码、Token、验证码粘贴到聊天或写进仓库。
