@@ -45,6 +45,17 @@ test('common text presentation attributes survive import and export', () => {
   assert.equal(codec.decode(codec.encode(result.drawing)).drawing.find('t').attributes['text-anchor'], 'middle');
 });
 
+test('flattened transforms preserve inherited text size and stroke widths', () => {
+  const codec = new XmlSvgCodec();
+  const result = codec.decode('<svg font-size="20" stroke="black" opacity="0.5"><g id="g" transform="scale(2)"><g id="i" transform="scale(0.5)"><text id="t" x="1" y="2">hello</text></g><line id="l"/></g></svg>');
+  assert.equal(result.drawing.find('t').attributes['font-size'], '20');
+  assert.equal(result.drawing.find('t').attributes['stroke-width'], '1');
+  assert.equal(result.drawing.find('l').attributes['stroke-width'], '2');
+  assert.equal(result.drawing.presentation.opacity, '0.5');
+  assert.equal(result.drawing.find('g').attributes.opacity, undefined);
+  assert.equal(codec.encode(result.drawing.clone()), codec.encode(result.drawing));
+});
+
 for (const xml of [
   '<svg><rect id="a"/><g id="a"/></svg>', '<svg><rect></svg>', '<svg/><svg/>',
   '<html/>', '<svg><path id="p" d="M0 0"/></svg>', '<svg><rect id="r" width="NaN"/></svg>',

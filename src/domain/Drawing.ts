@@ -10,6 +10,8 @@ export class Drawing {
   get width(): number { return this.canvasWidth; }
   get height(): number { return this.canvasHeight; }
   get children(): readonly Shape[] { return this.root.children; }
+  get presentation(): Readonly<Record<string, string>> { return this.root.attributes; }
+  setPresentation(attribute: string, value: string): void { this.root.importPresentation(attribute, value); }
   resize(w: number, h: number): void { Value.positive(w, 'canvas width'); Value.positive(h, 'canvas height'); this.canvasWidth = w; this.canvasHeight = h; }
   all(): Shape[] {
     const visit = (node: Shape): Shape[] => [node, ...node.children.flatMap(visit)];

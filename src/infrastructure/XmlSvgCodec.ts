@@ -69,6 +69,19 @@ export class XmlSvgCodec implements SvgCodec {
         nested.forEach(child => shape.insert(parse(child)));
       } else if (nested.length) throw new Error('nested elements in SVG leaf are not supported');
       else if (shape.content === undefined && element.textContent?.trim()) throw new Error('unexpected text inside SVG shape');
+      // Before flattening a scale, make inherited text/stroke lengths explicit on leaves.
+      // Inner and outer transforms subsequently scale these lengths once each.
+      if (!(shape instanceof Group)) {
+        const ancestors: Element[] = [];
+        for (let current: Node | null = element; current?.nodeType === 1; current = current.parentNode) ancestors.push(current as Element);
+        if (ancestors.some(ancestor => /scale\s*\(/.test(ancestor.getAttribute('transform') ?? ''))) {
+          const inheritedValue = (key: string): string | undefined => ancestors.find(ancestor => ancestor.hasAttribute(key))?.getAttribute(key) ?? undefined;
+          if (shape.content !== undefined) shape.importPresentation('font-size', inheritedValue('font-size') ?? '16');
+          if ((inheritedValue('stroke') ?? 'none') !== 'none') shape.importPresentation('stroke-width', inheritedValue('stroke-width') ?? '1');
+          const dash = inheritedValue('stroke-dasharray');
+          if (dash) shape.importPresentation('stroke-dasharray', dash);
+        }
+      }
       if (attributes['data-kind']) warnings.push('warning: imported ' + id + ' as ordinary ' + type + ' (plugin metadata ignored)');
       if (attributes.transform) new SvgTransform(attributes.transform).apply(shape);
       return shape;
@@ -78,16 +91,14 @@ export class XmlSvgCodec implements SvgCodec {
       const attr = root.attributes.item(i)!;
       if (!['xmlns', 'version', 'id', 'width', 'height', 'viewBox'].includes(attr.name)) rootStyles[attr.name] = attr.value;
     }
-    // Distribute inherited root presentation to direct children, preserving explicit overrides.
-    const inherited = new Group('__root_styles__');
-    for (const [key, value] of Object.entries(rootStyles)) inherited.importPresentation(key, value);
+    // Keep root presentation on the root: opacity, in particular, is compositing state.
+    for (const [key, value] of Object.entries(rootStyles)) drawing.setPresentation(key, value);
     for (let i = 0; i < root.childNodes.length; i++) {
       const node = root.childNodes.item(i)!;
       if (node.nodeType === 3 && node.nodeValue?.trim()) throw new Error('unexpected text inside SVG root');
     }
     children(root).forEach(element => {
       const shape = parse(element);
-      for (const [key, value] of Object.entries(inherited.attributes)) if (shape.attributes[key] === undefined) shape.importPresentation(key, value);
       drawing.add(shape);
     });
     return { drawing, warnings };
@@ -97,6 +108,7 @@ export class XmlSvgCodec implements SvgCodec {
     const root = document.documentElement;
     root.setAttribute('xmlns', this.namespace); root.setAttribute('width', String(drawing.width)); root.setAttribute('height', String(drawing.height));
     root.setAttribute('viewBox', '0 0 ' + drawing.width + ' ' + drawing.height);
+    for (const [key, value] of Object.entries(drawing.presentation)) root.setAttribute(key, value);
     const append = (shape: Shape, parent: Element): void => {
       const element = document.createElementNS(this.namespace, shape.tag);
       element.setAttribute('id', shape.id);

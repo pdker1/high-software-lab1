@@ -22,5 +22,18 @@ export class SvgTransform {
     }
     if (!/^\s*$/.test(raw.slice(end))) throw new Error('unsupported SVG transform');
   }
-  apply(shape: Shape): void { shape.scale(this.scaleFactor); shape.move(this.dx, this.dy); }
+  apply(shape: Shape): void {
+    shape.scale(this.scaleFactor); shape.move(this.dx, this.dy);
+    if (this.scaleFactor === 1) return;
+    const scalePresentation = (node: Shape): void => {
+      for (const attribute of ['font-size', 'stroke-width']) {
+        const raw = node.attributes[attribute];
+        if (raw !== undefined) node.importPresentation(attribute, String(Value.number(Value.number(raw.replace(/px$/, '')) * this.scaleFactor)));
+      }
+      const dash = node.attributes['stroke-dasharray'];
+      if (dash && dash !== 'none') node.importPresentation('stroke-dasharray', dash.trim().split(/[\s,]+/).map(value => Value.number(Value.number(value.replace(/px$/, '')) * this.scaleFactor)).join(' '));
+      node.children.forEach(scalePresentation);
+    };
+    scalePresentation(shape);
+  }
 }
